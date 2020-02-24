@@ -30,6 +30,15 @@ def create_transforms(transform_args):
     return transforms.Compose(train_trans), transforms.Compose(val_trans)
 
 
+def val_split(ids, val_fraction, shuffle_dataset=True, random_seed=13):
+    dataset_size = len(ids)
+    split = int(np.floor(val_fraction * dataset_size))
+    if shuffle_dataset :
+        np.random.seed(random_seed)
+        np.random.shuffle(ids)
+    return ids[split:], ids[:split]
+
+
 def unnormalize_batch(image_batch):
     inv_batch = torch.empty(image_batch.size())
     for i, image in enumerate(image_batch):
@@ -38,9 +47,34 @@ def unnormalize_batch(image_batch):
         orig_image = inv_normalize(image)
         inv_batch[i] = orig_image
     return inv_batch
+   
     
-    
+def val(epoch):
+    for i, (image_batch, caption_batch, length_batch) in enumerate(val_dataloader):
+        image_batch.to(device)
+        caption_batch.to(device)
+        target_batch = pack_padded_sequence(caption_batch, length_batch, batch_first=True)
+
+        # Run through model
+        ### encoder_features = encoder()
+        ### output = decoder(encoder_features)
+
+        # Calculate and store loss
+        loss = criterion(output, target_batch)
+        
+        # For the first batch, display how we are doing
+        if i == 0:
+            un_batch = unnormalize_batch(image_batch)
+            writer.add_images('Validation Batch Sample', un_batch, epoch)
+            ### add the captions predicted here for this batch
+            
+    ###writer.add_scalar('BLEU/Validation, score, epoch)
+    writer.add_scalar('Loss/Validation', loss.item(), epoch) 
+    writer.flush()
+
+        
 def main(args):
+    # Create SummaryWriter object for tracking using tensorboard
     writer = SummaryWriter('{0}/{1}'.format(args.tensorboard_path, args.run_id))
     
     # Load vocab built from build_vocab.py
@@ -54,15 +88,8 @@ def main(args):
     # Set-up the transforms to apply to the datasets
     train_transforms, val_transforms = create_transforms(args.transforms.split(','))
     
-    validation_split = args.validation_split
-    shuffle_dataset = True
-    random_seed = 13
-    dataset_size = len(IDs)
-    split = int(np.floor(validation_split * dataset_size))
-    if shuffle_dataset :
-        np.random.seed(random_seed)
-        np.random.shuffle(IDs)
-    train_ids, val_ids = IDs[split:], IDs[:split]
+    # Split into training and validation sets
+    train_ids, val_ids = val_split(filtered_ids, args.validation_split)
     
     # Load datasets into dataloader
     train_dataloader = get_loader(root=args.image_path, json=args.annotation_path, 
@@ -74,32 +101,58 @@ def main(args):
     
     
     # Build models
+    ### encoder = whatever encoder script the man James comes up with
+    ### decoder = whatever decoder script the man James comes up with
     
     # Add loss function and gradient optimizer
+    criterion = nn.CrossEntropyLoss()
+    ### parameters = parameters of the model passed in as a list, will need to concat from encoder and decoder
+    optimizer = optim.Adam(parameters, lr=args.learning_rate)
+    
+    # Baseline validation
+    val(0)
     
     # Train loop
-    for epoch in range(args.num_epochs):
-        for i, (image_batch, caption_batch, length_batch) in enumerate(val_dataloader):
-            un_batch = unnormalize_batch(image_batch)
-            writer.add_images('Batch sample', un_batch, i)
+    batches = len(train_dataloader)
+    for epoch in range(1, args.num_epochs+1):
+        for i, (image_batch, caption_batch, length_batch) in enumerate(train_dataloader):
+            image_batch.to(device)
+            caption_batch.to(device)
+            target_batch = pack_padded_sequence(caption_batch, length_batch, batch_first=True)
+            
+            # Run through model
+            ### encoder_features = encoder()
+            ### output = decoder(encoder_features)
+            
+            # Calculate and store loss
+            loss = criterion(output, target_batch)
+            writer.add_scalar('Loss/Train', loss.item(), epoch) 
             writer.flush()
-            break
+            
+            # Backpropagate
+            loss.backward()
+            optimizer.step()
+            
+            # Print log info
+            if (i+1) % 1000 == 0:
+                print('[{}/{}] Epochs, [{}/{}] Batches'.format(epoch, num_epochs, loss.item(), np.exp(loss.item())))
+                
+            # Save the model at checkpoints
+            if (i+1) % 1000 == 0:
+                ###torch.save(encoder)
+                ###torch.save(decoder)
+                pass
+        
+        ### Probably want a BLEU/BLUE score added in here as well
+        val(epoch)
     writer.close()
-        # Get batch
-        # Forward
-        # Backward
-        # Optimize
-        # Print log info
-        # Save model
-    # Validation step (maybe call function)
-    
+       
     
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--run_id', type=str, default='test', help='Identifier for Tensorboard, default is "test"')
     parser.add_argument('--tensorboard_path', type=str, default='tensorboard_aklie', help='Directory for Tensorboard output')
     parser.add_argument('--model_path', type=str, default='models', help='Directory for saved model checkpoints')
-    ### WILL NEED TO CHANGE TO RESIZED
     parser.add_argument('--image_path', type=str, default='data/images/resized', help='Directory with training images')
     parser.add_argument('--annotation_path', type=str, default='data/annotations/captions_train2014.json', help='Directory with training images')
     parser.add_argument('--transforms', type=str, default='crop', help='Comma separated list of transforms to include in image preprocessing (crop, hflip are supported)')
@@ -107,6 +160,7 @@ if __name__ == '__main__':
     parser.add_argument('--num_workers', type=int, default=4, help='Number of workers for dataloading')
     parser.add_argument('--validation_split', type=float, default=0.2, help='Validation split percentage for training')
     parser.add_argument('--num_epochs', type=int, default=5, help='Number of epochs to train on')
+    parser.add_argument('--learning_rate', type=float, default=5e-3, help='Set learning rate for training')
     args = parser.parse_args()
     
     if not os.path.exists('{0}/{1}'.format(args.tensorboard_path, args.run_id)):

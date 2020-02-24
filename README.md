@@ -7,11 +7,14 @@ get_data.py -- script to retrieve data (currently specific to data being on dsml
 
 dependencies.txt -- Run pip install dependencies.txt from command line to make sure you have all the necessary packages installed to run to train and test the model
 
-subset_data.py -- filters the list of caption ids to include only those that will actually be used during training (basically filters based on if the file is in the training image folder or not). Saves this list of filtered ids that can be used in data loading
+subset_data.py -- filters the list of caption ids to include only those that will actually be used during training (basically filters based on if the file is in the training image folder or not). Saves this list of filtered ids that can be used in data loading. To see usage type python subset_data.py --help on command line
 
 
 # TODO
 
-- [ ] Function for validation split
-- [ ] Skeleton for training loop
-- [ ] Function (skeleton of one at least) for validation call after each train and at baseline
+- [ ] test function for validation split
+- [ ] Integrate model to train and val loops
+- [ ] Integrate resize, build_vocab into training
+- [ ] Add hyperparam storing to tensorboard
+- [ ] Add BLEU scoring to val and train
+- [ ] Caption generation for validation set
