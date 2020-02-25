@@ -85,13 +85,14 @@ def val(epoch, data_loader, encode, decode, loss, summary):
 def main(args, run_id):
     
     # Create SummaryWriter object for tracking using tensorboard
-    writer = SummaryWriter('{0}/{1}'.format(args.tensorboard_path, run_id))
-                                                                                                        
+    writer = SummaryWriter('{0}/{1}/{2}'.format(args.tensorboard_path, args.run_id, run_id))
+                                                                                                      
     # Load vocab built from build_vocab.py
     with open('data/vocab.pkl', 'rb') as f:
         vocab = pickle.load(f)
         
     # Load IDs that will be used for training
+    ### NEED TO GET BLAIR'S WORKING
     with open('data/filtered_ids.pkl', 'rb') as f:
         IDs = pickle.load(f)
     
@@ -100,7 +101,7 @@ def main(args, run_id):
     
     # Split into training and validation sets
     train_ids, val_ids = val_split(IDs, args.validation_split)
-    
+          
     # Load datasets into dataloader
     train_dataloader = get_loader(root=args.image_path, json=args.annotation_path, 
                                   ids=train_ids, vocab=vocab, transform=train_transforms,
@@ -111,10 +112,10 @@ def main(args, run_id):
     
     
     # Build models
-    encoder = Enigma(args.embed_dim)
+    encoder = Enigma(args.embed_dim).to(device)
     decoder = Christopher(len(vocab), args.embed_dim, 
                           args.units_per_layer, args.num_layers, 
-                          args.unit_type, args.pretrained_embedding)
+                          args.unit_type, args.pretrained_embedding).to(device)
     
     # Add loss function and gradient optimizer
     criterion = nn.CrossEntropyLoss()
@@ -128,8 +129,8 @@ def main(args, run_id):
     num_batches = len(train_dataloader)
     for epoch in range(1, args.num_epochs+1):
         for i, (image_batch, caption_batch, length_batch) in enumerate(train_dataloader):
-            image_batch.to(device)
-            caption_batch.to(device)
+            image_batch = image_batch.to(device)
+            caption_batch = caption_batch.to(device)
             target_batch = pack_padded_sequence(caption_batch, length_batch, batch_first=True)[0]
             
             # Run through model
@@ -138,22 +139,20 @@ def main(args, run_id):
             
             # Calculate and store loss
             loss = criterion(output, target_batch)
-            writer.add_scalar('Loss/Train', loss.item(), epoch) 
-            writer.flush()
             
             # Backpropagate
-            decoder.zero_grad()
             encoder.zero_grad()
+            decoder.zero_grad()
             loss.backward()
             optimizer.step()
                 
             # Print log info
-            if i % args.log_step == 0:
+            if (i+1) % args.log_step == 0:
                 print('[{}/{}] Epochs, [{}/{}] Batches, Loss: {:.4f}, Perplexity: {:5.4f}'.\
                       format(epoch, args.num_epochs, i, num_batches, loss.item(), np.exp(loss.item())))
                 
             # Save the model at checkpoints
-            if i % args.save_step == 0:
+            if (i+1) % args.save_step == 0:
                 torch.save(encoder.state_dict(), 
                            os.path.join(args.model_path, 
                                    'Enigma_{0}-{1}_lr-{2}_nl-{3}_hls-{4}_es-{5}_bs-{6}_t-{7}_pte-{8}.ckpt'\
@@ -169,9 +168,12 @@ def main(args, run_id):
                                   )
                           )
             '''
-            if i == 5:
+            if i == 1:
                 break
             '''
+        writer.add_scalar('Loss/Train', loss.item(), epoch) 
+        writer.flush()
+        
         ### Probably want a BLEU/BLUE score added in here as well
         #val(epoch, val_dataloader, encoder, decoder, criterion, writer)
     
@@ -183,6 +185,7 @@ if __name__ == '__main__':
     
     # File structure arguments
     path_args = parser.add_argument_group('Input/output options:')
+    path_args.add_argument('--run_id', type=str, default='test', help='tensorboard subdirectory')
     path_args.add_argument('--tensorboard_path', type=str, default='tensorboard_aklie', help='Directory for Tensorboard output')
     path_args.add_argument('--model_path', type=str, default='models', help='Directory for saved model checkpoints')
     path_args.add_argument('--image_path', type=str, default='data/images/resized', help='Directory with training images')
@@ -203,14 +206,14 @@ if __name__ == '__main__':
     # Training arguments
     training_args = parser.add_argument_group('Training options:')
     training_args.add_argument('--batch_size', type=int, default=128, help='Batch size for mini-batch gradient descent')
-    training_args.add_argument('--num_workers', type=int, default=4, help='Number of workers for dataloading')
+    training_args.add_argument('--num_workers', type=int, default=2, help='Number of workers for dataloading')
     training_args.add_argument('--validation_split', type=float, default=0.2, help='Validation split percentage for training')
     training_args.add_argument('--num_epochs', type=int, default=5, help='Number of epochs to train on')
     training_args.add_argument('--learning_rate', type=float, default=5e-3, help='Set learning rate for training')
     
     # Logging arguments
     log_args = parser.add_argument_group('Logging options:')
-    log_args.add_argument('--log_step', type=int, default=500, help='Number of batches between printing status')
+    log_args.add_argument('--log_step', type=int, default=10, help='Number of batches between printing status')
     log_args.add_argument('--save_step', type=int, default=500, help='Number of batches between saving models')
                            
     args = parser.parse_args()

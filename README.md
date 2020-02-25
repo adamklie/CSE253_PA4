@@ -18,8 +18,6 @@ subset_data.py -- filters the list of caption ids to include only those that wil
 # TODO
 
 - [ ] test function for validation split
-- [ ] Integrate model to train and val loops
-- [ ] Integrate resize, build_vocab into training
-- [ ] Add hyperparam storing to tensorboard
+- [ ] Fix word_holder
 - [ ] Add BLEU scoring to val and train
 - [ ] Caption generation for validation set
