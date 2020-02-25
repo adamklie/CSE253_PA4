@@ -5,8 +5,6 @@ Model built for RNN and LSTM (w/o pretrained weights) --> model can be specified
 
 Training works for both models
 
-**In progress:**
-
--[ ]- Evaluation of stochastic and deterministic for both LSTM and RNN in caption generation (and validation data)
+Evaluation works for both models
   
  
