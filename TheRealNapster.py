@@ -122,7 +122,7 @@ class Christopher(nn.Module):
     #1) output from the CNN encoding
     #2) the length of the maximum caption + a buffer of some words in case test set has longer  --> currently using 20 but will re-adapt           when get length of max caption --> don't want while loop in case it never reaches <end>
     #3) (If easy) the index of <end>
-    def ItsGameTime(self, lookAtMe, maximumCaptionLength = 20):
+    def ItsGameTime(self, lookAtMe, maximumCaptionLength = 57):
         madameLulu = list()
         feedThisIn = lookAtMe.unsqueeze(1)
         
@@ -169,7 +169,7 @@ class Christopher(nn.Module):
     #1) output of CNN encoding 
     #2) max caption length
     #3) Temperature
-    def IsTheAnswerASmallBoysSundayTrousers(self, lookAtMe, maxCaptionLength = 20, seanPaul = 0.8):
+    def IsTheAnswerASmallBoysSundayTrousers(self, lookAtMe, maxCaptionLength = 57, seanPaul = 0.8):
         madameLulu = list()
         feedThisIn = lookAtMe.unsqueeze(1)
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
