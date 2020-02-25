@@ -7,8 +7,8 @@ from pycocotools.coco import COCO
 from tqdm import tqdm
 
 def subprocess_cmd(command):
-    process = subprocess.Popen(command, shell=True)
-    proc_stdout = process.communicate()[0].strip()
+    process = subprocess.Popen(command.split(), stdout=subprocess.PIPE)
+    output, error = process.communicate()
     
 def main(args):
     # Set-up directories
@@ -21,8 +21,7 @@ def main(args):
         subprocess_cmd('wget http://msvocds.blob.core.windows.net/annotations-1-0-3/captions_train-val2014.zip -P {}/'.format(args.data_directory))
         subprocess_cmd('unzip {0}/captions_train-val2014.zip -d {0}/'.format(args.data_directory))
         subprocess_cmd('rm {}/captions_train-val2014.zip'.format(args.data_directory))
-        
-        
+          
     # Train images
     coco = COCO('{}/annotations/captions_train2014.json'.format(args.data_directory))
     

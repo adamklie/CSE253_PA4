@@ -30,6 +30,9 @@ class word_holder(object):
         else:
             return self.word_to_idx[word]
     
+    def __len__(self):
+        return len(self.word_to_idx)
+    
 def build_word_holder(json, rarity):
     
     # read in JSON
@@ -62,11 +65,11 @@ def build_word_holder(json, rarity):
     return wh
 
 if __name__ == '__main__':
-    json_dir = './data/annotations/captions_val2014.json'
+    json_dir = 'data/annotations/captions_val2014.json'
     rarity = 10
-    wh = build_word_holder(json = json_dir, rarity = 10)
+    wh = build_word_holder(json = json_dir, rarity = 4)
     
     # write binary
-    with open('/home/b2jia/CODE4/PA4/vocabulary.pkl', "wb") as f:
+    with open('data/vocabulary.pkl', "wb") as f:
         pickle.dump(wh, f)   
             
