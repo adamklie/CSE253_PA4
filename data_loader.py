@@ -6,8 +6,8 @@ import pickle
 import numpy as np
 import nltk
 from PIL import Image
-#from word_holder import word_holder
-from build_vocab import Vocabulary
+from word_holder import word_holder
+#from build_vocab import Vocabulary
 from pycocotools.coco import COCO
 
 

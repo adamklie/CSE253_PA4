@@ -11,8 +11,8 @@ from torchvision import transforms, datasets
 from torch.utils.data.sampler import SubsetRandomSampler
 from torch.utils.data import DataLoader
 from TheRealNapster import *
-#from word_holder import word_holder
-from build_vocab import Vocabulary
+from word_holder import word_holder
+#from build_vocab import Vocabulary
 
 def create_transforms(transform_args):
     train_trans = []
@@ -50,12 +50,22 @@ def unnormalize_batch(image_batch):
         inv_batch[i] = orig_image
     return inv_batch
    
-    
-def val(epoch, data_loader, encode, decode, loss, summary):
+def get_words(word_ids, vocab):
+    captions = []
+    for word_id in word_ids:
+        token = vocab.idx_to_word[word_id]
+        captions.append(token)
+        if token == '<end>':
+            break
+    return ' '.join(captions)
+        
+def val(epoch, data_loader, encode, decode, crit, vocabulary, summary):
+    encode = encode.eval()
+    encode = encode.to(device)
+    decode = decode.to(device)
     for i, (image_batch, caption_batch, length_batch) in enumerate(data_loader):
-        print('Here')
-        image_batch.to(device)
-        caption_batch.to(device)
+        image_batch = image_batch.to(device)
+        caption_batch = caption_batch.to(device)
         target_batch = pack_padded_sequence(caption_batch, length_batch, batch_first=True)[0]
        
         # Run through model
@@ -63,20 +73,28 @@ def val(epoch, data_loader, encode, decode, loss, summary):
         output = decode(encoder_features, caption_batch, length_batch)
 
         # Calculate and store loss
-        loss = loss(output, target_batch)
-        
-        print('[{}/{}] Epochs, Loss: {:.4f}, Perplexity: {:5.4f}'.\
-                      format(epoch, args.num_epochs, loss.item(), np.exp(loss.item())))
+        loss = crit(output, target_batch)
         
         # For the first batch, display how we are doing on four images
         if i == 0:
-            un_batch = unnormalize_batch(image_batch[0:4])
-            summary.add_images('Validation Batch Sample', un_batch, epoch)
-            ### add the captions predicted here for this batch
+            un_batch = unnormalize_batch(image_batch[13])
+            summary.add_images('Epoch [{}/{}] Validation Batch Sample'.format(epoch, args.num_epochs), un_batch, epoch)
+            
+            caption_ids = decode.ItsGameTime(encoder_features)
+            print(caption_ids)
+            caption_ids = [i_d[13].item() for i_d in caption_ids]
+            print(caption_ids)
+            print(len(caption_ids))
+            caption = get_words(caption_ids, vocabulary)
+            summary.add_text('Epoch [{}/{}] Image 1 Predicted Caption'.format(epoch, args.num_epochs), caption, epoch)
         
+        #'''
         if i == 1:
             break
+        #'''
             
+    print('VALIDATION: [{}/{}] Epochs, Loss: {:.4f}, Perplexity: {:5.4f}'.\
+                      format(epoch, args.num_epochs, loss.item(), np.exp(loss.item())))
     ###writer.add_scalar('BLEU/Validation, score, epoch)
     summary.add_scalar('Loss/Validation', loss.item(), epoch) 
     summary.flush()
@@ -88,7 +106,7 @@ def main(args, run_id):
     writer = SummaryWriter('{0}/{1}/{2}'.format(args.tensorboard_path, args.run_id, run_id))
                                                                                                       
     # Load vocab built from build_vocab.py
-    with open('data/vocab.pkl', 'rb') as f:
+    with open('data/vocabulary.pkl', 'rb') as f:
         vocab = pickle.load(f)
         
     # Load IDs that will be used for training
@@ -123,7 +141,7 @@ def main(args, run_id):
     optimizer = torch.optim.Adam(parameters, lr=args.learning_rate)
     
     # Baseline validation
-    #val(0, val_dataloader, encoder, decoder, criterion, writer)
+    val(0, val_dataloader, encoder, decoder, criterion, vocab, writer)
     
     # Train loop
     num_batches = len(train_dataloader)
@@ -147,12 +165,12 @@ def main(args, run_id):
             optimizer.step()
                 
             # Print log info
-            if (i+1) % args.log_step == 0:
-                print('[{}/{}] Epochs, [{}/{}] Batches, Loss: {:.4f}, Perplexity: {:5.4f}'.\
+            if i % args.log_step == 0:
+                print('TRAINING: [{}/{}] Epochs, [{}/{}] Batches, Loss: {:.4f}, Perplexity: {:5.4f}'.\
                       format(epoch, args.num_epochs, i, num_batches, loss.item(), np.exp(loss.item())))
                 
             # Save the model at checkpoints
-            if (i+1) % args.save_step == 0:
+            if i % args.save_step == 0:
                 torch.save(encoder.state_dict(), 
                            os.path.join(args.model_path, 
                                    'Enigma_{0}-{1}_lr-{2}_nl-{3}_hls-{4}_es-{5}_bs-{6}_t-{7}_pte-{8}.ckpt'\
@@ -167,15 +185,15 @@ def main(args, run_id):
                                            args.embed_dim, args.batch_size, args.unit_type, args.pretrained_embedding)
                                   )
                           )
-            '''
+            #'''  
             if i == 1:
                 break
-            '''
+            #'''
         writer.add_scalar('Loss/Train', loss.item(), epoch) 
         writer.flush()
         
         ### Probably want a BLEU/BLUE score added in here as well
-        #val(epoch, val_dataloader, encoder, decoder, criterion, writer)
+        val(epoch, val_dataloader, encoder, decoder, criterion, vocab, writer)
     
     writer.close()
        

@@ -18,7 +18,7 @@ class word_holder(object):
         
         # if new word during vocab building, create new key
         if word not in self.word_to_idx:
-            self.word_to_idx[self.idx] = self.idx
+            self.word_to_idx[word] = self.idx
             self.idx_to_word[self.idx] = word
             self.idx += 1
     

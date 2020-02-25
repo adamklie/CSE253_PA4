@@ -17,7 +17,5 @@ subset_data.py -- filters the list of caption ids to include only those that wil
 
 # TODO
 
-- [ ] test function for validation split
-- [ ] Fix word_holder
 - [ ] Add BLEU scoring to val and train
 - [ ] Caption generation for validation set

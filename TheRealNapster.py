@@ -128,15 +128,15 @@ class Christopher(nn.Module):
         
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
          
-        ht = Variable(torch.zeros(lookAtMe.size()[0], self.aceVenturaPetDetective,dtype = torch.float32).unsqueeze(1).to(device)) #(batch size, 1, hidden size)
-        ct = Variable(torch.zeros(lookAtMe.size()[0], self.aceVenturaPetDetective,dtype = torch.float32).unsqueeze(1).to(device))
-        hidden = Variable(torch.zeros(lookAtMe.size()[0], self.aceVenturaPetDetective,dtype = torch.float32).unsqueeze(1).to(device)) 
+        ht = Variable(torch.zeros(lookAtMe.size()[0], self.aceVenturaPetDetective, dtype = torch.float32).unsqueeze(1).to(device)) #(batch size, 1, hidden size)
+        ct = Variable(torch.zeros(lookAtMe.size()[0], self.aceVenturaPetDetective, dtype = torch.float32).unsqueeze(1).to(device))
+        hidden = Variable(torch.zeros(lookAtMe.size()[0], self.aceVenturaPetDetective, dtype = torch.float32).unsqueeze(1).to(device)) 
         
         #numIter = 0
         
         #print(type(ht))
         #print(ht.size())
-        print(feedThisIn.size())
+        #print(feedThisIn.size())
         for i in range(maximumCaptionLength):
             if self.modelType.lower() == "lstm": 
                 comingOut, (ht,ct) = self.perfectRecall(feedThisIn, (ht,ct))
@@ -160,6 +160,7 @@ class Christopher(nn.Module):
             #numIter += 1
             #print("I have finished iteration:")
             #print(numIter)
+            
         madameLulu = torch.Tensor(madameLulu) #Need this? 
         
         return madameLulu #returns a list of indexes 
