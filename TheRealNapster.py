@@ -8,6 +8,7 @@ import torch.nn.functional as F
 import torchvision.models as models
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 import gensim
+from torch.autograd import Variable
 
 #CNN
 class Enigma(nn.Module):
@@ -35,7 +36,8 @@ class Enigma(nn.Module):
         #print("The size of x is: " + str(x.size()))
         #print("The new size of x is: " + str(x.squeeze().size())) #x.reshape(x.shape[0], -1).size()))
         
-        decodeThis = self.bn1(self.dudeWheresMyCar(x.squeeze())) # x.reshape(x.shape[0],-1)
+        decodeThis = self.bn1(self.dudeWheresMyCar(x.reshape(x.shape[0],-1))) 
+        #x.squeeze() doesn't work since it removes the first dimension in 1 image analysis in validation
         
         #ResNet 50 final layer does not have activation function in last layer: 
         #From experimentation in colab this is the final layer: (fc): Linear(in_features=2048, out_features=1000, bias=True)
@@ -55,7 +57,7 @@ class Christopher(nn.Module):
     def __init__(self, perfectScoreOnTheReadingSectionOfTheSAT, theMacauDevice = 256, hideAndGoSeek = 256, inDepthAnalysis = 1, modelType = "lstm", preInitialize = False): 
         super(Christopher,self).__init__()
         self.vocabSize = perfectScoreOnTheReadingSectionOfTheSAT
-        
+        self.aceVenturaPetDetective = hideAndGoSeek #hidden size which will need to be called in initialization of evaluation methods
         #embedding layer
         if (not preInitialize):
             print("Not pre-initializing...")
@@ -100,16 +102,17 @@ class Christopher(nn.Module):
         #print("Packed dimensions: " + str(packingItIn.data.shape))
         #print("Length shape: " + str(len(lengths)))
               
-        #LSTM + unembed
+        #LSTM
         if self.modelType.lower() == "lstm":
-            trashCompactor , (ht, ct) = self.perfectRecall(packingItIn)
+            trashCompactor, (ht, ct) = self.perfectRecall(packingItIn)
             #agentOfChaos = self.unEmbedder(trashCompactor.data)
         
-        #RNN + unembed
+        #RNN 
         else: 
             trashCompactor, hidden = self.perfectRecall(packingItIn)
             #print(trashCompactor)
         
+        #unembed
         agentOfChaos = self.unEmbedder(trashCompactor.data)
        
         return agentOfChaos
@@ -122,19 +125,29 @@ class Christopher(nn.Module):
     def ItsGameTime(self, lookAtMe, maximumCaptionLength = 20):
         madameLulu = list()
         feedThisIn = lookAtMe.unsqueeze(1)
-        ht = None
-        ct = None
-        hidden = None 
         
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+         
+        ht = Variable(torch.zeros(lookAtMe.size()[0], self.aceVenturaPetDetective,dtype = torch.float32).unsqueeze(1).to(device)) #(batch size, 1, hidden size)
+        ct = Variable(torch.zeros(lookAtMe.size()[0], self.aceVenturaPetDetective,dtype = torch.float32).unsqueeze(1).to(device))
+        hidden = Variable(torch.zeros(lookAtMe.size()[0], self.aceVenturaPetDetective,dtype = torch.float32).unsqueeze(1).to(device)) 
+        
+        #numIter = 0
+        
+        #print(type(ht))
+        #print(ht.size())
+        print(feedThisIn.size())
         for i in range(maximumCaptionLength):
-            if self.modelType.lower == "lstm":
-                ht, ct = self.perfectRecall(feedThisIn, (ht,ct))
-                print("The lstm hidden state dimension is:" + str(ht.size()))
-                youThinkDarknessIsYourAlly = self.unEmbedder(ht.squeeze(1))
+            if self.modelType.lower() == "lstm": 
+                comingOut, (ht,ct) = self.perfectRecall(feedThisIn, (ht,ct))
+                #print(ct.size())
+                #print(type(ct))
+                #print("The lstm hidden state dimension is:" + str(ht.size()))
+                youThinkDarknessIsYourAlly = self.unEmbedder(comingOut.squeeze(1))
             else:
-                hidden = self.perfectRecall(feedThisIn, hidden)
-                print("The RNN hidden state dimension is:" + str(hidden.size()))
-                youThinkDarknessIsYourAlly = self.unEmbedder(hidden.squeeze(1))
+                comingOut, hidden = self.perfectRecall(feedThisIn, hidden)
+                #print("The RNN hidden state dimension is:" + str(hidden.size())) #
+                youThinkDarknessIsYourAlly = self.unEmbedder(comingOut.squeeze(1))
             
             notUsed, trelawney = youThinkDarknessIsYourAlly.max(1) #max returns: the values of the max,the indexes of the max
             #max(0) will give the max along the vocab dimensions which is not what want 
@@ -143,7 +156,10 @@ class Christopher(nn.Module):
             madameLulu.append(trelawney)
             #Encode prediction with index as during training  
             feedThisIn = self.wellArentYouFancy(trelawney.unsqueeze(1)) #need unsqueeze here??? --> check dimensions...
-            
+            #print(feedThisIn.size())
+            #numIter += 1
+            #print("I have finished iteration:")
+            #print(numIter)
         madameLulu = torch.Tensor(madameLulu) #Need this? 
         
         return madameLulu #returns a list of indexes 
@@ -153,34 +169,41 @@ class Christopher(nn.Module):
     #1) output of CNN encoding 
     #2) max caption length
     #3) Temperature
-    def IsTheAnswerASmallBoysSundayTrousers(self, lookAtMe, maxCaptionLength = 20, seanPaul = 0.4):
+    def IsTheAnswerASmallBoysSundayTrousers(self, lookAtMe, maxCaptionLength = 20, seanPaul = 0.8):
         madameLulu = list()
         feedThisIn = lookAtMe.unsqueeze(1)
-        ht = None
-        ct = None
-        hidden = None 
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+         
+        ht = Variable(torch.zeros(lookAtMe.size()[0], self.aceVenturaPetDetective,dtype = torch.float32).unsqueeze(1).to(device)) #(batch size, 1, hidden size)
+        ct = Variable(torch.zeros(lookAtMe.size()[0], self.aceVenturaPetDetective,dtype = torch.float32).unsqueeze(1).to(device))
         
-        for i in range(maximumCaptionLength):
-            if self.modelType.lower == "lstm":
-                ht, ct = self.perfectRecall(feedThisIn, (ht,ct))
-                print("The lstm hidden state dimension is:" + str(ht.size()))
-                youThinkDarknessIsYourAlly = self.unEmbedder(ht.squeeze(1))
+        hidden = Variable(torch.zeros(lookAtMe.size()[0], self.aceVenturaPetDetective,dtype = torch.float32).unsqueeze(1).to(device))
+        
+        for i in range(maxCaptionLength):
+            if self.modelType.lower() == "lstm":
+                comingOut, (ht, ct) = self.perfectRecall(feedThisIn, (ht,ct))
+                #print("The lstm hidden state dimension is:" + str(ht.size()))
+                youThinkDarknessIsYourAlly = self.unEmbedder(comingOut.squeeze(1))
             else:
-                hidden = self.perfectRecall(feedThisIn, hidden)
-                print("The RNN hidden state dimension is:" + str(hidden.size()))
-                youThinkDarknessIsYourAlly = self.unEmbedder(hidden.squeeze(1))
+                comingOut, hidden = self.perfectRecall(feedThisIn, hidden)
+                #print("The RNN hidden state dimension is:" + str(comingOut.size()))
+                youThinkDarknessIsYourAlly = self.unEmbedder(comingOut.squeeze(1))
+            #print("how fat are you?")
+            #print(youThinkDarknessIsYourAlly.size())
             
-            
-            probabilities = F.softmax(youThinkDarknessIsYourAlly.div(seanPaul).squeeze(0).squeeze(0), dim=1) 
+            probabilities = F.softmax(youThinkDarknessIsYourAlly.div(seanPaul), dim=1) #.squeeze(0).squeeze(0)
             trelawney = torch.multinomial(probabilities, 1)
             
+            #print(trelawney)
             #append the prediction to the list
-            madameLulu.append(trelawney)
-            #Encode prediction with index as during training  
-            feedThisIn = self.wellArentYouFancy(trelawney.unsqueeze(1)) #need unsqueeze here???
             
+            madameLulu.append(trelawney)
+            
+            #Encode prediction with index as during training  
+            feedThisIn = self.wellArentYouFancy(trelawney) 
+            
+            #print(feedThisIn.size())
+            #print(feedThisIn 
         madameLulu = torch.Tensor(madameLulu)
         
         return madameLulu
-        
-                 
