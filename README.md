@@ -1,11 +1,35 @@
-# CSE253_PA4
-PA4 Image Captioning
+# CSE253_PA4 Image Captioning
 
-Model built for RNN and LSTM (w/o pretrained weights) --> model can be specified when called in training (if not will default to LSTM)
+## Running the code
 
-Training works for both models
+I would recommend starting by adding the following files to a new directory (on dsmlp server)
 
-Evaluation works for both models
+__STATIC FILES__
+TrainImageIds.csv
+TestImageIds.csv
+TheRealNapster.py
+data_loader.py
+
+__RUNNABLE FILES__
+get_data.py
+word_holder.py
+subset_data.py
+resize.py
+train.py
+test.py
+
+Then running the runnable files in this order and manner:
+
+```bash
+python get_data.py
+python word_holder.py
+python subset_data.py
+python resize.py
+python train.py --run_id test_1
+python test.py (not yet tested)
+```
+
+## File descriptions
   
 train.py -- script to train the model on training images. To see usage type python train.py --help on command line
 
@@ -15,7 +39,7 @@ dependencies.txt -- Run pip install dependencies.txt from command line to make s
 
 subset_data.py -- filters the list of caption ids to include only those that will actually be used during training (basically filters based on if the file is in the training image folder or not). Saves this list of filtered ids that can be used in data loading. To see usage type python subset_data.py --help on command line
 
-# TODO
+## TODO
 
 - [ ] Add BLEU scoring to val and train
 - [ ] Caption generation for validation set
