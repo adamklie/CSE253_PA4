@@ -10,7 +10,8 @@ from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 import gensim
 from torch.autograd import Variable
 
-#CNN
+#CNN--> Input the embedding size (what size the new linear layer eeds to output to be consistent with LSTM/RNN format
+
 class Enigma(nn.Module):
     def __init__(self, theMacauDevice = 256):
         super(Enigma,self).__init__()
@@ -128,18 +129,21 @@ class Christopher(nn.Module):
         
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
          
-        ht = Variable(torch.zeros(lookAtMe.size()[0], self.aceVenturaPetDetective,dtype = torch.float32).unsqueeze(1).to(device)) #(batch size, 1, hidden size)
-        ct = Variable(torch.zeros(lookAtMe.size()[0], self.aceVenturaPetDetective,dtype = torch.float32).unsqueeze(1).to(device))
-        hidden = Variable(torch.zeros(lookAtMe.size()[0], self.aceVenturaPetDetective,dtype = torch.float32).unsqueeze(1).to(device)) 
+        ht = Variable(torch.zeros(lookAtMe.size()[0], self.aceVenturaPetDetective,dtype = torch.float32).unsqueeze(0).to(device)) #(batch size, 1, hidden size)
+        ct = Variable(torch.zeros(lookAtMe.size()[0], self.aceVenturaPetDetective,dtype = torch.float32).unsqueeze(0).to(device))
+        #states = None
+        hidden = Variable(torch.zeros(lookAtMe.size()[0], self.aceVenturaPetDetective,dtype = torch.float32).unsqueeze(0).to(device)) 
         
         #numIter = 0
         
         #print(type(ht))
         #print(ht.size())
-        print(feedThisIn.size())
+        #print("batch size into model is: ") 
+        #print(feedThisIn.size())
         for i in range(maximumCaptionLength):
             if self.modelType.lower() == "lstm": 
                 comingOut, (ht,ct) = self.perfectRecall(feedThisIn, (ht,ct))
+                #comingOut, states = self.perfectRecall(feedThisIn, states)
                 #print(ct.size())
                 #print(type(ct))
                 #print("The lstm hidden state dimension is:" + str(ht.size()))
@@ -160,7 +164,12 @@ class Christopher(nn.Module):
             #numIter += 1
             #print("I have finished iteration:")
             #print(numIter)
-        madameLulu = torch.Tensor(madameLulu) #Need this? 
+            
+        #for el in madameLulu:
+        #    print(el)
+        #print(type(madameLulu))
+        
+        madameLulu = torch.stack(madameLulu, dim = 1) # torch.Tensor(madameLulu) --> no gets very very unhappy with list of tensors -- have to                                                     use torch.stack  
         
         return madameLulu #returns a list of indexes 
     
@@ -174,10 +183,10 @@ class Christopher(nn.Module):
         feedThisIn = lookAtMe.unsqueeze(1)
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
          
-        ht = Variable(torch.zeros(lookAtMe.size()[0], self.aceVenturaPetDetective,dtype = torch.float32).unsqueeze(1).to(device)) #(batch size, 1, hidden size)
-        ct = Variable(torch.zeros(lookAtMe.size()[0], self.aceVenturaPetDetective,dtype = torch.float32).unsqueeze(1).to(device))
+        ht = Variable(torch.zeros(lookAtMe.size()[0], self.aceVenturaPetDetective,dtype = torch.float32).unsqueeze(0).to(device)) #(batch size, 1, hidden size)
+        ct = Variable(torch.zeros(lookAtMe.size()[0], self.aceVenturaPetDetective,dtype = torch.float32).unsqueeze(0).to(device))
         
-        hidden = Variable(torch.zeros(lookAtMe.size()[0], self.aceVenturaPetDetective,dtype = torch.float32).unsqueeze(1).to(device))
+        hidden = Variable(torch.zeros(lookAtMe.size()[0], self.aceVenturaPetDetective,dtype = torch.float32).unsqueeze(0).to(device))
         
         for i in range(maxCaptionLength):
             if self.modelType.lower() == "lstm":
@@ -194,16 +203,20 @@ class Christopher(nn.Module):
             probabilities = F.softmax(youThinkDarknessIsYourAlly.div(seanPaul), dim=1) #.squeeze(0).squeeze(0)
             trelawney = torch.multinomial(probabilities, 1)
             
-            #print(trelawney)
+            #print(trelawney[0])
             #append the prediction to the list
             
-            madameLulu.append(trelawney)
+            madameLulu.append(trelawney[0])
             
             #Encode prediction with index as during training  
             feedThisIn = self.wellArentYouFancy(trelawney) 
             
             #print(feedThisIn.size())
             #print(feedThisIn 
-        madameLulu = torch.Tensor(madameLulu)
+        madameLulu = torch.stack(madameLulu, dim = 1)
         
         return madameLulu
+        
+                 
+        
+                 
