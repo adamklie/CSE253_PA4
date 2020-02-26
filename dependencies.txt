@@ -1,7 +1,0 @@
-matplotlib
-nltk
-numpy
-Pillow
-argparse
-tensorboardX
-gensim
