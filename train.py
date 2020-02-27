@@ -63,11 +63,12 @@ def get_words(captions, vocab):
     return sampled_caption
         
     
-def val(epoch, data_loader, encode, decode, crit, vocabulary, summary):
+def train(epoch, data_loader, encode, decode, crit, vocabulary, summary):
     
     encode = encode.eval()
     encode = encode.to(device)
     decode = decode.to(device)
+    running_loss = 0 
     
     for i, (image_batch, caption_batch, length_batch) in enumerate(data_loader):
         image_batch = image_batch.to(device)
@@ -80,6 +81,34 @@ def val(epoch, data_loader, encode, decode, crit, vocabulary, summary):
 
         # Calculate and store loss
         loss = crit(output, target_batch)
+        running_loss += loss.item()
+            
+    print('TRAINING: [{}/{}] Epochs, Loss: {:.4f}, Perplexity: {:5.4f}'.\
+                      format(epoch, args.num_epochs, loss.item(), np.exp(loss.item())))
+    
+    summary.add_scalar('Loss/Train', running_loss/i, epoch) 
+    summary.flush()
+
+    
+def val(epoch, data_loader, encode, decode, crit, vocabulary, summary):
+    
+    encode = encode.eval()
+    encode = encode.to(device)
+    decode = decode.to(device)
+    running_loss = 0 
+    
+    for i, (image_batch, caption_batch, length_batch) in enumerate(data_loader):
+        image_batch = image_batch.to(device)
+        caption_batch = caption_batch.to(device)
+        target_batch = pack_padded_sequence(caption_batch, length_batch, batch_first=True)[0]
+       
+        # Run through model
+        encoder_features = encode(image_batch)
+        output = decode(encoder_features, caption_batch, length_batch)
+
+        # Calculate and store loss
+        loss = crit(output, target_batch)
+        running_loss += loss.item()
         
         # For the first batch, display how we are doing on four images
         if i == 0:
@@ -98,16 +127,15 @@ def val(epoch, data_loader, encode, decode, crit, vocabulary, summary):
             summary.add_text('Epoch [{}/{}] Image 2 Predicted Caption'.format(epoch, args.num_epochs), caption[1], epoch)
             summary.add_text('Epoch [{}/{}] Image 3 Predicted Caption'.format(epoch, args.num_epochs), caption[2], epoch)
             summary.add_text('Epoch [{}/{}] Image 4 Predicted Caption'.format(epoch, args.num_epochs), caption[3], epoch)
-            break
             
     print('VALIDATION: [{}/{}] Epochs, Loss: {:.4f}, Perplexity: {:5.4f}'.\
                       format(epoch, args.num_epochs, loss.item(), np.exp(loss.item())))
     
     ###summary.add_scalar('BLEU/Validation, score, epoch)
-    summary.add_scalar('Loss/Validation', loss.item(), epoch) 
+    summary.add_scalar('Loss/Validation', running_loss/i, epoch)
     summary.flush()
-
-        
+    
+    
 def main(args, run_id):
     
     # Create SummaryWriter object for tracking using tensorboard
@@ -148,10 +176,14 @@ def main(args, run_id):
     
     # Baseline validation
     val(0, val_dataloader, encoder, decoder, criterion, vocab, writer)
+    train(0, train_dataloader, encoder, decoder, criterion, vocab, writer)
     encoder = encoder.train()
+    
     # Train loop
     num_batches = len(train_dataloader)
     for epoch in range(1, args.num_epochs+1):
+        
+        running_loss = 0
         for i, (image_batch, caption_batch, length_batch) in enumerate(train_dataloader):
             image_batch = image_batch.to(device)
             caption_batch = caption_batch.to(device)
@@ -163,6 +195,7 @@ def main(args, run_id):
             
             # Calculate and store loss
             loss = criterion(output, target_batch)
+            running_loss += loss.item()
             
             # Backpropagate
             encoder.zero_grad()
@@ -192,7 +225,7 @@ def main(args, run_id):
                                   )
                           )
                 
-        writer.add_scalar('Loss/Train', loss.item(), epoch) 
+        writer.add_scalar('Loss/Train', running_loss/i, epoch) 
         writer.flush()
         
         # Run validation set through model
