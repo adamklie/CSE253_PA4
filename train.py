@@ -148,7 +148,7 @@ def main(args, run_id):
     
     # Baseline validation
     val(0, val_dataloader, encoder, decoder, criterion, vocab, writer)
-    
+    encoder = encoder.train()
     # Train loop
     num_batches = len(train_dataloader)
     for epoch in range(1, args.num_epochs+1):
@@ -195,9 +195,9 @@ def main(args, run_id):
         writer.add_scalar('Loss/Train', loss.item(), epoch) 
         writer.flush()
         
-        ### Probably want a BLEU/BLUE score added in here as well
+        # Run validation set through model
         val(epoch, val_dataloader, encoder, decoder, criterion, vocab, writer)
-    
+        encoder = encoder.train()
     writer.close()
        
     
@@ -209,12 +209,12 @@ if __name__ == '__main__':
     path_args.add_argument('--run_id', type=str, default='test', help='tensorboard subdirectory')
     path_args.add_argument('--tensorboard_path', type=str, default='tensorboard_aklie', help='Directory for Tensorboard output')
     path_args.add_argument('--model_path', type=str, default='models', help='Directory for saved model checkpoints')
-    path_args.add_argument('--image_path', type=str, default='data/images/resized', help='Directory with training images')
+    path_args.add_argument('--image_path', type=str, default='data/images/train_resized', help='Directory with training images')
     path_args.add_argument('--annotation_path', type=str, default='data/annotations/captions_train2014.json', help='Directory with training annotations')
     
     # Data preprocessing arguments
     preproc_args = parser.add_argument_group('Data preprocessing options:')
-    preproc_args.add_argument('--transforms', type=str, default='crop', help='Comma separated list of transforms to include in image preprocessing (crop, hflip are supported)')
+    preproc_args.add_argument('--transforms', type=str, default='', help='Comma separated list of transforms to include in image preprocessing (crop, hflip are supported)')
     
     # Model structure arguments
     model_args = parser.add_argument_group('Model structure options:')
@@ -229,13 +229,13 @@ if __name__ == '__main__':
     training_args.add_argument('--batch_size', type=int, default=128, help='Batch size for mini-batch gradient descent')
     training_args.add_argument('--num_workers', type=int, default=2, help='Number of workers for dataloading')
     training_args.add_argument('--validation_split', type=float, default=0.2, help='Validation split percentage for training')
-    training_args.add_argument('--num_epochs', type=int, default=5, help='Number of epochs to train on')
+    training_args.add_argument('--num_epochs', type=int, default=10, help='Number of epochs to train on')
     training_args.add_argument('--learning_rate', type=float, default=5e-3, help='Set learning rate for training')
     
     # Logging arguments
     log_args = parser.add_argument_group('Logging options:')
     log_args.add_argument('--log_step', type=int, default=10, help='Number of batches between printing status')
-    log_args.add_argument('--save_step', type=int, default=500, help='Number of batches between saving models')
+    log_args.add_argument('--save_step', type=int, default=250, help='Number of batches between saving models')
                            
     args = parser.parse_args()
     
