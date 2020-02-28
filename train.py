@@ -1,3 +1,8 @@
+'''
+Created on: Sunday Feb 23 
+Author: Adam Klie
+'''
+
 import argparse
 import os
 import numpy as np
@@ -10,7 +15,7 @@ from tensorboardX import SummaryWriter
 from torchvision import transforms, datasets
 from torch.utils.data.sampler import SubsetRandomSampler
 from torch.utils.data import DataLoader
-from TheRealNapster import *
+from TheBestNapster import *
 from word_holder import word_holder
 
 def create_transforms(transform_args):
@@ -84,7 +89,7 @@ def train(epoch, data_loader, encode, decode, crit, vocabulary, summary):
         running_loss += loss.item()
             
     print('TRAINING: [{}/{}] Epochs, Loss: {:.4f}, Perplexity: {:5.4f}'.\
-                      format(epoch, args.num_epochs, loss.item(), np.exp(loss.item())))
+                      format(epoch, args.num_epochs, running_loss/i, np.exp(running_loss/i)))
     
     summary.add_scalar('Loss/Train', running_loss/i, epoch) 
     summary.flush()
@@ -118,7 +123,13 @@ def val(epoch, data_loader, encode, decode, crit, vocabulary, summary):
             summary.add_images('Epoch [{}/{}] Validation Batch Sample'.format(epoch, args.num_epochs), un_batch, epoch)
             
             # Get captions
-            caption_ids = decode.ItsGameTime(encoder_features)
+            if args.sampling_type == 'deterministic':
+                caption_ids = decode.ItsGameTime(encoder_features, args.num_layers)
+            elif args.sampling_type == 'stochastic':
+                caption_ids = decode.IsTheAnswerASmallBoysSundayTrousers(encoder_features, args.num_layers, args.temperature)
+            else:
+                print('What the sampling function do you think you are doing')
+                return
             caption_ids = caption_ids[0:4].cpu().numpy() 
             caption = get_words(caption_ids, vocabulary)
             
@@ -129,9 +140,8 @@ def val(epoch, data_loader, encode, decode, crit, vocabulary, summary):
             summary.add_text('Epoch [{}/{}] Image 4 Predicted Caption'.format(epoch, args.num_epochs), caption[3], epoch)
             
     print('VALIDATION: [{}/{}] Epochs, Loss: {:.4f}, Perplexity: {:5.4f}'.\
-                      format(epoch, args.num_epochs, loss.item(), np.exp(loss.item())))
+                      format(epoch, args.num_epochs, running_loss/i, np.exp(running_loss/i)))
     
-    ###summary.add_scalar('BLEU/Validation, score, epoch)
     summary.add_scalar('Loss/Validation', running_loss/i, epoch)
     summary.flush()
     
@@ -165,7 +175,7 @@ def main(args, run_id):
     
     # Build models
     encoder = Enigma(args.embed_dim).to(device)
-    decoder = Christopher(len(vocab), args.embed_dim, 
+    decoder = Christopher(vocab, args.embed_dim, 
                           args.units_per_layer, args.num_layers, 
                           args.unit_type, args.pretrained_embedding).to(device)
     
@@ -264,6 +274,8 @@ if __name__ == '__main__':
     training_args.add_argument('--validation_split', type=float, default=0.2, help='Validation split percentage for training')
     training_args.add_argument('--num_epochs', type=int, default=10, help='Number of epochs to train on')
     training_args.add_argument('--learning_rate', type=float, default=5e-3, help='Set learning rate for training')
+    training_args.add_argument('--sampling_type', type=str, default='deterministic', help='Caption generation method (deterministic or stochastic)')
+    training_args.add_argument('--temperature', type=float, default=0.8, help='temperature for stochastic sampling, only used if --sampling_type is stochastic')
     
     # Logging arguments
     log_args = parser.add_argument_group('Logging options:')
