@@ -106,7 +106,7 @@ def val(epoch, data_loader, encode, decode, crit, vocabulary, summary):
     ###summary.add_scalar('BLEU/Validation, score, epoch)
     summary.add_scalar('Loss/Validation', loss.item(), epoch) 
     summary.flush()
-
+    
         
 def main(args, run_id):
     
@@ -147,8 +147,9 @@ def main(args, run_id):
     optimizer = torch.optim.Adam(parameters, lr=args.learning_rate)
     
     # Baseline validation
-    #val(0, val_dataloader, encoder, decoder, criterion, vocab, writer)
-    
+    val(0, val_dataloader, encoder, decoder, criterion, vocab, writer)
+    encoder.train()
+        
     # Train loop
     num_batches = len(train_dataloader)
     for epoch in range(1, args.num_epochs+1):
@@ -196,8 +197,9 @@ def main(args, run_id):
         writer.flush()
         
         ### Probably want a BLEU/BLUE score added in here as well
-        #val(epoch, val_dataloader, encoder, decoder, criterion, vocab, writer)
-    
+        val(epoch, val_dataloader, encoder, decoder, criterion, vocab, writer)
+        encoder.train()
+        
     writer.close()
        
     
