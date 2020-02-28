@@ -15,7 +15,7 @@ from tensorboardX import SummaryWriter
 from torchvision import transforms, datasets
 from torch.utils.data.sampler import SubsetRandomSampler
 from torch.utils.data import DataLoader
-from TheRealNapster import *
+from TheBestNapster import *
 from word_holder import word_holder
 from nltk.translate.bleu_score import sentence_bleu
 from nltk.translate.bleu_score import SmoothingFunction    
@@ -92,9 +92,9 @@ def main(args, run_id):
         encoder_features = encoder(image_batch)
         
         if args.sampling_type == 'deterministic':
-                output = decode.ItsGameTime(encoder_features, args.num_layers)
+                output = decoder.ItsGameTime(encoder_features, args.num_layers)
         elif args.sampling_type == 'stochastic':
-            output = decode.IsTheAnswerASmallBoysSundayTrousers(encoder_features, args.num_layers, args.temperature)
+            output = decoder.IsTheAnswerASmallBoysSundayTrousers(encoder_features, args.num_layers, args.temperature)
         else:
             print('What the sampling function do you think you are doing')
             return
