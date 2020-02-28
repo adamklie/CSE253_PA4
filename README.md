@@ -7,7 +7,7 @@ I would recommend starting by adding the following files to a new directory (on 
 __STATIC FILES__
 TrainImageIds.csv
 TestImageIds.csv
-TheRealNapster.py
+TheBestNapster.py
 data_loader.py
 
 __RUNNABLE FILES__
@@ -30,16 +30,26 @@ python test.py --run_id test_1
 ```
 
 ## File descriptions
-  
-train.py -- script to train the model on training images. To see usage type python train.py --help on command line
+__get_data.py__ -- script to retrieve data (currently specific to data being on dsmlp-login.ucsd.edu server. To see usage type python get_data.py --help on command line
 
-get_data.py -- script to retrieve data (currently specific to data being on dsmlp-login.ucsd.edu server. To see usage type python get_data.py --help on command line
+__word_holder.py__ --
 
-dependencies.txt -- Run pip install dependencies.txt from command line to make sure you have all the necessary packages installed to run to train and test the model
+__subset_data.py__ -- filters the list of caption ids to include only those that will actually be used during training (basically filters based on if the file is in the training image folder or not). Saves this list of filtered ids that can be used in data loading. To see usage type python subset_data.py --help on command line
 
-subset_data.py -- filters the list of caption ids to include only those that will actually be used during training (basically filters based on if the file is in the training image folder or not). Saves this list of filtered ids that can be used in data loading. To see usage type python subset_data.py --help on command line
+__resize.py__
+
+__train.py__ -- script to train the model on training images. To see usage type python train.py --help on command line
+
+__test.py__
+
+
+<font color="red"> __dependencies.txt__ -- Run pip install dependencies.txt from command line to make sure you have all the necessary packages installed to run to train and test the model <\font>
+
+
 
 ## TODO
 
-- [ ] Add BLEU scoring to val and train
-- [ ] Hyperparameter search
+- [ ] Hyperparameter search and recording of different scores
+- [ ] Test pretrained embeddings/rnn/stochastic on BLEU scoring to be sure we are getting comparable results
+- [ ] Re-read assignment to make sure we have implemented everything
+- [ ] Run models for long time for final results
