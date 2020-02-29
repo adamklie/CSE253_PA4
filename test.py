@@ -155,10 +155,11 @@ if __name__ == '__main__':
     
     args = parser.parse_args()
     
-    run_id = 'lr-{0}_nl-{1}_hls-{2}_es-{3}_bs-{4}_t-{5}_pte-{6}'.format(args.learning_rate, args.num_layers,
+    run_id = 'lr-{0}_nl-{1}_hls-{2}_es-{3}_bs-{4}_t-{5}_pte-{6}_st-{7}_temp-{8}'.format(args.learning_rate, args.num_layers,
                                                                         args.units_per_layer, args.embed_dim,
                                                                         args.batch_size, args.unit_type,
-                                                                        args.pretrained_embedding)
+                                                                        args.pretrained_embedding, args.sampling_type,
+                                                                                        args.temperature)
                            
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     
