@@ -2,21 +2,21 @@
 
 ## Running the code
 
-I would recommend starting by adding the following files to a new directory (on dsmlp server)
+We would recommend starting by adding the following files to a new directory (on dsmlp server)
 
-__STATIC FILES__
-TrainImageIds.csv
-TestImageIds.csv
-TheBestNapster.py
-data_loader.py
+__STATIC FILES__<br>
+TrainImageIds.csv<br>
+TestImageIds.csv<br>
+TheBestNapster.py<br>
+data_loader.py<br>
 
 __RUNNABLE FILES__
-get_data.py
-word_holder.py
-subset_data.py
-resize.py
-train.py
-test.py
+get_data.py<br>
+word_holder.py<br>
+subset_data.py<br>
+resize.py<br>
+train.py<br>
+test.py<br>
 
 Then running the runnable files in this order and manner:
 
